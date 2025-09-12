@@ -1,5 +1,13 @@
 # Remote-viewing-commitment-scheme
 
+# Remote-viewing-commitment-scheme
+
+A cryptographic commitment scheme for remote viewing experiments.  
+Implements message sealing + verification using HMAC-SHA256.
+
+## Code
+
+```python
 #!/usr/bin/env python3
 import secrets, hmac, hashlib, base64, json, time
 
@@ -18,15 +26,10 @@ def _b64d(s: str) -> bytes:
 
 # --- Core ---
 def seal(msg: str, key: bytes = None, ctx: bytes = b"psi-commit:v4"):
-    """
-    Seal a message: returns (commitment JSON string, secret key).
-    - msg: canonicalized target string
-    - key: optional 32-byte secret key (generated if None)
-    - ctx: domain-separation tag
-    """
+    """Seal a message: returns (commitment JSON string, secret key)."""
     if key is None:
-        key = secrets.token_bytes(32)      # fresh secret key
-    salt = secrets.token_bytes(16)         # per-trial randomness
+        key = secrets.token_bytes(32)
+    salt = secrets.token_bytes(16)
     mac = hmac.new(key, ctx + salt + msg.encode("utf-8"), hashlib.sha256).digest()
     c = json.dumps({
         "v": "4",
@@ -38,10 +41,7 @@ def seal(msg: str, key: bytes = None, ctx: bytes = b"psi-commit:v4"):
     return c, key
 
 def verify(msg: str, key: bytes, c: str) -> bool:
-    """
-    Verify that a commitment matches a message and key.
-    Returns True if valid, False otherwise.
-    """
+    """Verify that a commitment matches a message and key."""
     o = json.loads(c)
     ctx = _b64d(o["ctx"])
     salt = _b64d(o["salt"])
@@ -51,8 +51,6 @@ def verify(msg: str, key: bytes, c: str) -> bool:
 
 # --- Logging ---
 def log(entry: dict):
-    """
-    Append a timestamp and print JSON (append-only log format).
-    """
-    entry["ts"] = round(time.time(), 6)   # microsecond precision
+    """Append a timestamp and print JSON (append-only log format)."""
+    entry["ts"] = round(time.time(), 6)
     print(json.dumps(entry, ensure_ascii=False))
