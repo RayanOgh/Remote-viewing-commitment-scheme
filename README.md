@@ -1,7 +1,5 @@
 # Remote-viewing-commitment-scheme
 
-# Remote-viewing-commitment-scheme
-
 A cryptographic commitment scheme for remote viewing experiments.  
 Implements message sealing + verification using HMAC-SHA256.
 
@@ -17,19 +15,17 @@ def canon(s: str) -> str:
     return "".join(ch for ch in s.strip().lower() if ch.isalnum() or ch.isspace())
 
 def _b64e(b: bytes) -> str:
-    """Base64 encode (URL-safe, no padding)."""
     return base64.urlsafe_b64encode(b).decode().rstrip("=")
 
 def _b64d(s: str) -> bytes:
-    """Base64 decode (URL-safe, restore padding)."""
     return base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
 
 # --- Core ---
 def seal(msg: str, key: bytes = None, ctx: bytes = b"psi-commit:v4"):
-    """Seal a message: returns (commitment JSON string, secret key)."""
+    """Seal a message: returns (commitment, secret key)."""
     if key is None:
-        key = secrets.token_bytes(32)
-    salt = secrets.token_bytes(16)
+        key = secrets.token_bytes(32)      # fresh secret key
+    salt = secrets.token_bytes(16)         # per-trial randomness
     mac = hmac.new(key, ctx + salt + msg.encode("utf-8"), hashlib.sha256).digest()
     c = json.dumps({
         "v": "4",
@@ -51,6 +47,27 @@ def verify(msg: str, key: bytes, c: str) -> bool:
 
 # --- Logging ---
 def log(entry: dict):
-    """Append a timestamp and print JSON (append-only log format)."""
-    entry["ts"] = round(time.time(), 6)
+    entry["ts"] = round(time.time(), 6)   # microsecond precision
     print(json.dumps(entry, ensure_ascii=False))
+
+# --- Demo ---
+if __name__ == "__main__":
+    target = "Apple"
+
+    # Commit phase
+    commitment, key = seal(canon(target))
+    log({"type": "trial_start", "trial_id": 1, "commitment": commitment})
+
+    # Guess phase (skipped here — normally participant guesses)
+
+    # Reveal + verify
+    ok = verify(canon(target), key, commitment)
+    outcome = "success" if ok else "failure"
+    log({
+        "type": "reveal",
+        "trial_id": 1,
+        "target": target,
+        "key_b64": _b64e(key),
+        "verify_ok": ok,
+        "outcome": outcome
+    })
