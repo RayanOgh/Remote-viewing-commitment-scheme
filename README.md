@@ -3,6 +3,8 @@
 A cryptographic commitment scheme for remote viewing experiments.  
 Implements message sealing + verification using HMAC-SHA256.
 
+Author: Rayan Reza O'ghabian
+
 ## Code
 
 ```python
